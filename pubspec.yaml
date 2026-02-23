@@ -1,0 +1,37 @@
+name: coach_app
+description: Kişisel Antrenor Uygulamasi
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Firebase - EN GÜNCEL VERSİYONLAR
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  cloud_firestore: ^4.15.8
+  firebase_storage: ^11.6.9
+  
+  # UI & Utils
+  flutter_riverpod: ^2.5.1
+  go_router: ^13.2.0
+  video_player: ^2.8.2
+  chewie: ^1.7.4
+  fl_chart: ^0.66.0
+  image_picker: ^1.0.7
+  intl: ^0.19.0
+  cached_network_image: ^3.3.1
+  uuid: ^4.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.2
+
+flutter:
+  uses-material-design: true
