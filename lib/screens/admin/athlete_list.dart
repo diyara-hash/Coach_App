@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../common/chat_screen.dart';
+import 'athlete_progress.dart';
+import 'assign_program.dart';
 
 class AthleteList extends StatelessWidget {
   const AthleteList({super.key});
@@ -202,12 +205,52 @@ class AthleteList extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.fitness_center, color: Colors.orange),
                 title: const Text('Program Ata'),
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  Navigator.pop(context); // Önce bottom sheet'i kapat
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AssignProgram(
+                        athleteId: athlete['id'] ?? '',
+                        athleteName: athlete['name'] ?? 'İsimsiz',
+                      ),
+                    ),
+                  );
+                },
               ),
               ListTile(
                 leading: const Icon(Icons.show_chart, color: Colors.green),
                 title: const Text('İlerlemeyi Gör'),
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AthleteProgress(
+                        athleteId: athlete['id'] ?? '',
+                        athleteName: athlete['name'] ?? 'İsimsiz',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.message, color: Colors.blue),
+                title: const Text('Mesaj Gönder'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatScreen(
+                        athleteId: athlete['id'] ?? '',
+                        athleteName: athlete['name'] ?? 'İsimsiz',
+                        currentUserId: 'admin',
+                        isCoach: true,
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
