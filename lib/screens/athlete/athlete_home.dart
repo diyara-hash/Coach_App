@@ -1,15 +1,16 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../models/program_model.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import '../../models/program.dart';
+import '../../services/database_service.dart';
 import '../auth/login_screen.dart';
 import '../common/chat_screen.dart';
-import '../common/notification_screen.dart';
 import 'athlete_profile.dart';
+import '../../core/theme/app_theme.dart';
+
+import '../../features/measurements/student_measurement_form.dart';
 
 class AthleteHome extends StatefulWidget {
   final String athleteId;
-
   const AthleteHome({super.key, required this.athleteId});
 
   @override
@@ -17,553 +18,83 @@ class AthleteHome extends StatefulWidget {
 }
 
 class _AthleteHomeState extends State<AthleteHome> {
-  Stream<DocumentSnapshot>? _programStream;
-  StreamSubscription? _notificationSubscription;
-  int selectedDay = 0;
-  final DateTime _startTime = DateTime.now();
+  int _selectedIndex = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _loadProgram();
-    _listenNotifications();
-  }
+  Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      _WorkoutList(athleteId: widget.athleteId),
+      StudentMeasurementForm(athleteId: widget.athleteId),
+    ];
 
-  @override
-  void dispose() {
-    _notificationSubscription?.cancel();
-    super.dispose();
-  }
-
-  void _listenNotifications() {
-    _notificationSubscription = FirebaseFirestore.instance
-        .collection('notifications')
-        .where('targetUserId', isEqualTo: widget.athleteId)
-        .where('timestamp', isGreaterThan: _startTime)
-        .snapshots()
-        .listen((snapshot) {
-          for (var change in snapshot.docChanges) {
-            if (change.type == DocumentChangeType.added) {
-              final data = change.doc.data() as Map<String, dynamic>;
-              _showInAppNotification(
-                data['title'] ?? 'Yeni Bildirim',
-                data['body'] ?? '',
-              );
-            }
-          }
-        });
-  }
-
-  void _showInAppNotification(String title, String body) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+    return Scaffold(
+      body: pages[_selectedIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) => setState(() => _selectedIndex = index),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.fitness_center_rounded),
+              label: 'Antrenman',
             ),
-            Text(
-              body,
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.straighten_rounded),
+              label: 'Ölçülerim',
             ),
           ],
-        ),
-        backgroundColor: const Color(0xFFE94560),
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        action: SnackBarAction(
-          label: 'Gör',
-          textColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => NotificationScreen(userId: widget.athleteId),
-              ),
-            );
-          },
         ),
       ),
     );
   }
+}
 
-  void _loadProgram() {
-    _programStream = FirebaseFirestore.instance
-        .collection('athletes')
-        .doc(widget.athleteId)
-        .collection('programs')
-        .orderBy('assignedAt', descending: true)
-        .limit(1)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs.isNotEmpty
-              ? snapshot.docs.first
-              : throw 'No program',
-        );
-  }
-
-  Future<void> _logActivity({
-    required String type,
-    required String title,
-    required String subtitle,
-  }) async {
-    await FirebaseFirestore.instance
-        .collection('athletes')
-        .doc(widget.athleteId)
-        .collection('activity_logs')
-        .add({
-          'type': type,
-          'title': title,
-          'subtitle': subtitle,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-  }
+class _WorkoutList extends StatelessWidget {
+  final String athleteId;
+  const _WorkoutList({required this.athleteId});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: _programStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Color(0xFF0A0A0A),
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFFE94560)),
-            ),
-          );
-        }
+    final db = DatabaseService();
 
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-          return _buildNoProgramUI();
-        }
-
-        try {
-          final programData = snapshot.data!.data() as Map<String, dynamic>;
-          final program = ProgramModel.fromMap(programData);
-
-          return Scaffold(
-            backgroundColor: const Color(0xFF0A0A0A),
-            body: CustomScrollView(
-              slivers: [
-                // App Bar
-                SliverAppBar(
-                  expandedHeight: 180,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: const Color(0xFFE94560),
-                  flexibleSpace: FlexibleSpaceBar(
-                    title: const Text(
-                      'Antrenmanım',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    background: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0xFFE94560), Color(0xFF0A0A0A)],
-                        ),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const SizedBox(height: 40),
-                            CircleAvatar(
-                              radius: 35,
-                              backgroundColor: Colors.white,
-                              child: Text(
-                                widget.athleteId.substring(0, 1).toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFE94560),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  actions: [
-                    StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('notifications')
-                          .where('targetUserId', isEqualTo: widget.athleteId)
-                          .where('isRead', isEqualTo: false)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        int unreadCount = snapshot.hasData
-                            ? snapshot.data!.docs.length
-                            : 0;
-                        return Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.notifications_none),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => NotificationScreen(
-                                      userId: widget.athleteId,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            if (unreadCount > 0)
-                              Positioned(
-                                right: 8,
-                                top: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 16,
-                                    minHeight: 16,
-                                  ),
-                                  child: Text(
-                                    unreadCount > 9
-                                        ? '9+'
-                                        : unreadCount.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.account_circle),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                AthleteProfile(athleteId: widget.athleteId),
-                          ),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.logout),
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LoginScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-
-                // İçerik
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Haftalık Bilgi (Firestore'dan tek bir program geldiği için sabit gösterim yapıyoruz veya programın gününü gösteriyoruz)
-                        const SizedBox(height: 8),
-
-                        // Bugünün Programı Kartı
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFFE94560).withOpacity(0.3),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        program.muscle,
-                                        style: const TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFFE94560),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${program.duration} • ${program.exercises.length} egzersiz',
-                                        style: TextStyle(
-                                          color: Colors.grey[400],
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: const Color(
-                                        0xFFE94560,
-                                      ).withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(
-                                      Icons.fitness_center,
-                                      color: Color(0xFFE94560),
-                                      size: 32,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: LinearProgressIndicator(
-                                  value: program.exercises.isEmpty
-                                      ? 0
-                                      : program.exercises
-                                                .where((e) => e.done)
-                                                .length /
-                                            program.exercises.length,
-                                  backgroundColor: Colors.white.withOpacity(
-                                    0.1,
-                                  ),
-                                  valueColor: const AlwaysStoppedAnimation(
-                                    Color(0xFFE94560),
-                                  ),
-                                  minHeight: 8,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                '${program.exercises.where((e) => e.done).length}/${program.exercises.length} tamamlandı',
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Egzersiz Listesi
-                        const Text(
-                          'Egzersizler',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        ...program.exercises.map((exercise) {
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1A1A2E),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: exercise.done
-                                    ? Colors.green.withOpacity(0.3)
-                                    : Colors.white.withOpacity(0.05),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: exercise.done
-                                        ? Colors.green.withOpacity(0.2)
-                                        : const Color(
-                                            0xFFE94560,
-                                          ).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    exercise.done
-                                        ? Icons.check
-                                        : Icons.fitness_center,
-                                    color: exercise.done
-                                        ? Colors.green
-                                        : const Color(0xFFE94560),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        exercise.name,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          decoration: exercise.done
-                                              ? TextDecoration.lineThrough
-                                              : null,
-                                          color: exercise.done
-                                              ? Colors.grey
-                                              : Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        exercise.sets,
-                                        style: TextStyle(
-                                          color: Colors.grey[400],
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Checkbox(
-                                  value: exercise.done,
-                                  onChanged: (value) async {
-                                    final bool isDone = value ?? false;
-                                    setState(() {
-                                      exercise.done = isDone;
-                                    });
-
-                                    // Firestore'u güncelle
-                                    await FirebaseFirestore.instance
-                                        .collection('athletes')
-                                        .doc(widget.athleteId)
-                                        .collection('programs')
-                                        .doc(program.id)
-                                        .update({
-                                          'exercises': program.exercises
-                                              .map((e) => e.toMap())
-                                              .toList(),
-                                        });
-
-                                    // Aktiviteyi kaydet
-                                    if (isDone) {
-                                      await _logActivity(
-                                        type: 'exercise',
-                                        title: '${exercise.name} tamamlandı',
-                                        subtitle: '${program.muscle} programı',
-                                      );
-
-                                      // Program bitti mi kontrol et
-                                      bool allDone = program.exercises.every(
-                                        (e) => e.done,
-                                      );
-                                      if (allDone) {
-                                        await _logActivity(
-                                          type: 'program_complete',
-                                          title: 'Antrenman Bitti! 🎉',
-                                          subtitle:
-                                              '${program.muscle} programını başarıyla tamamladı.',
-                                        );
-
-                                        // Coach'a bildirim gönder
-                                        final notifId = FirebaseFirestore
-                                            .instance
-                                            .collection('notifications')
-                                            .doc()
-                                            .id;
-                                        await FirebaseFirestore.instance
-                                            .collection('notifications')
-                                            .doc(notifId)
-                                            .set({
-                                              'id': notifId,
-                                              'title':
-                                                  'Antrenman Tamamlandı! 🔥',
-                                              'body':
-                                                  'Bir sporcu ${program.muscle} programını bitirdi!',
-                                              'type': 'programCompleted',
-                                              'timestamp':
-                                                  FieldValue.serverTimestamp(),
-                                              'isRead': false,
-                                              'targetUserId': 'admin',
-                                              'senderId': widget.athleteId,
-                                            });
-                                      }
-                                    }
-                                  },
-                                  activeColor: Colors.green,
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ChatScreen(
-                      athleteId: widget.athleteId,
-                      athleteName: 'Sporcu', // Sporcu adı da eklenebilir
-                      currentUserId: widget.athleteId,
-                      isCoach: false,
-                    ),
-                  ),
-                );
-              },
-              backgroundColor: const Color(0xFFE94560),
-              icon: const Icon(Icons.chat),
-              label: const Text('Coach\'a Yaz'),
-            ),
-          );
-        } catch (e) {
-          return _buildNoProgramUI();
-        }
-      },
-    );
-  }
-
-  Widget _buildNoProgramUI() {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: const Text('ANTRENMANIM'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.forum_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    athleteId: athleteId,
+                    athleteName: 'Coach',
+                    currentUserId: athleteId,
+                    isCoach: false,
+                  ),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.person_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AthleteProfile(athleteId: athleteId),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
             onPressed: () {
               Navigator.pushReplacement(
                 context,
@@ -571,26 +102,358 @@ class _AthleteHomeState extends State<AthleteHome> {
               );
             },
           ),
+          const SizedBox(width: AppSpacing.sm),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.fitness_center, size: 80, color: Colors.grey),
-            const SizedBox(height: 24),
-            const Text(
-              'Henüz atanmış bir programın yok.',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+      body: StreamBuilder<List<Program>>(
+        stream: db.getAthletePrograms(athleteId),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Hata: ${snapshot.error}'));
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final programs = snapshot.data!;
+
+          if (programs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.fitness_center_rounded,
+                    size: 80,
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'Henüz program atanmamış',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Coachunuz yakında bir program atayacak.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            itemCount: programs.length,
+            itemBuilder: (context, index) {
+              final program = programs[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+                child: InkWell(
+                  onTap: () => _showProgramDetail(context, program),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                program.name.toUpperCase(),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(fontSize: 20),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.xs,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                '${program.exercises.length} Egzersiz',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'BUGÜNKÜ HEDEFİN',
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        ...program.exercises
+                            .take(3)
+                            .map(
+                              (ex) => Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: AppSpacing.xs,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Expanded(
+                                      child: Text(
+                                        '${ex.name} • ${ex.sets}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: AppColors.textPrimary,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        if (program.exercises.length > 3)
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.xs),
+                            child: Text(
+                              '+${program.exercises.length - 3} egzersiz daha...',
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                          ),
+                        const SizedBox(height: AppSpacing.lg),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              'DETAYLARI GÖR',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            SizedBox(width: AppSpacing.xs),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showProgramDetail(BuildContext context, Program program) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProgramDetailScreen(program: program),
+      ),
+    );
+  }
+}
+
+class ProgramDetailScreen extends StatelessWidget {
+  final Program program;
+
+  const ProgramDetailScreen({super.key, required this.program});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(program.name.toUpperCase())),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        itemCount: program.exercises.length,
+        itemBuilder: (context, index) {
+          final ex = program.exercises[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (ex.videoId != null && ex.videoId!.isNotEmpty)
+                    AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Image.network(
+                            'https://img.youtube.com/vi/${ex.videoId}/maxresdefault.jpg',
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.network(
+                                'https://img.youtube.com/vi/${ex.videoId}/0.jpg',
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          ),
+                          Container(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            child: const Icon(
+                              Icons.play_circle_filled_rounded,
+                              size: 72,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => _playVideo(context, ex.videoId!),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                ex.name,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.sm,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  ex.sets,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Coach\'un program atadığında burada görünecek.',
-              style: TextStyle(color: Colors.grey[400], fontSize: 14),
+          );
+        },
+      ),
+    );
+  }
+
+  void _playVideo(BuildContext context, String videoId) {
+    final controller = YoutubePlayerController.fromVideoId(
+      videoId: videoId,
+      autoPlay: true,
+      params: const YoutubePlayerParams(
+        showControls: true,
+        showFullscreenButton: true,
+        mute: false,
+        loop: false,
+        origin: 'https://www.youtube-nocookie.com',
+        showVideoAnnotations: false,
+      ),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: YoutubePlayer(controller: controller),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'KAPAT',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

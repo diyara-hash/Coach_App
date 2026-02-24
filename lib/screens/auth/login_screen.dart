@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../admin/admin_dashboard.dart';
 import '../athlete/athlete_home.dart';
+import '../../core/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,15 +22,14 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final code = _codeController.text.trim().toUpperCase();
 
-      // Önce athletes koleksiyonunda kodu ara
       final query = await FirebaseFirestore.instance
           .collection('athletes')
           .where('inviteCode', isEqualTo: code)
           .get();
 
       if (query.docs.isEmpty) {
-        // Admin kontrolü (basit)
         if (code == 'ADMIN' && _passwordController.text == 'admin123') {
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const AdminDashboard()),
@@ -37,33 +37,31 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
 
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Geçersiz kod!')));
         return;
       }
 
-      // Sporcu bulundu
       final athlete = query.docs.first.data();
-
-      // Şifre kontrolü (ilk girişte şifre boşsa yeni şifre kaydet)
       final savedPassword = athlete['password'];
       final enteredPassword = _passwordController.text;
 
       if (savedPassword == null || savedPassword.isEmpty) {
-        // İlk giriş - şifreyi kaydet
         await FirebaseFirestore.instance
             .collection('athletes')
             .doc(query.docs.first.id)
             .update({'password': enteredPassword});
       } else if (savedPassword != enteredPassword) {
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Hatalı şifre!')));
         return;
       }
 
-      // Giriş başarılı
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -71,78 +69,143 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Hata: $e')));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset('assets/images/bg_main.png', fit: BoxFit.cover),
           ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.fitness_center,
-                  size: 80,
-                  color: Color(0xFFE94560),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.8),
+                    Colors.black.withValues(alpha: 0.6),
+                    Colors.black.withValues(alpha: 0.9),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'COACH APP',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 3,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                TextField(
-                  controller: _codeController,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(
-                    hintText: 'Davet Kodunuz',
-                    filled: true,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    hintText: 'Şifreniz',
-                    filled: true,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('GİRİŞ YAP'),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.8),
+                          blurRadius: 60,
+                          spreadRadius: 10,
+                        ),
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.4),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/splash_logo.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    'MYCOACH',
+                    style: Theme.of(context).textTheme.displayLarge,
+                  ),
+                  Text(
+                    'PERFORMANCE & ELITE',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 4,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _codeController,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: const InputDecoration(
+                            hintText: 'Davet Kodunuz',
+                            prefixIcon: Icon(Icons.vpn_key_outlined),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            hintText: 'Şifreniz',
+                            prefixIcon: Icon(Icons.lock_outline_rounded),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+                        Container(
+                          width: double.infinity,
+                          height: 56,
+                          decoration: AppTheme.primaryGradient,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              minimumSize: Size.zero,
+                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.black,
+                                  )
+                                : const Text('GİRİŞ YAP'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

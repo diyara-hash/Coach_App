@@ -80,8 +80,12 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        title: Text(widget.isCoach ? widget.athleteName : 'Coach'),
-        backgroundColor: const Color(0xFFE94560),
+        title: Text(
+          widget.isCoach ? widget.athleteName : 'Coach',
+          style: const TextStyle(color: Colors.black),
+        ),
+        backgroundColor: const Color(0xFF00FF7F),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Column(
         children: [
@@ -155,7 +159,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.send, color: Color(0xFFE94560)),
+            icon: const Icon(Icons.send, color: Color(0xFF00FF7F)),
             onPressed: _sendMessage,
           ),
         ],
@@ -178,7 +182,7 @@ class _MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? const Color(0xFFE94560) : const Color(0xFF16213E),
+          color: isMe ? const Color(0xFF00FF7F) : const Color(0xFF16213E),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -192,12 +196,17 @@ class _MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(message.text, style: const TextStyle(color: Colors.white)),
+            Text(
+              message.text,
+              style: TextStyle(color: isMe ? Colors.black : Colors.white),
+            ),
             const SizedBox(height: 4),
             Text(
               DateFormat('HH:mm').format(message.timestamp),
               style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: isMe
+                    ? Colors.black.withValues(alpha: 0.6)
+                    : Colors.white.withValues(alpha: 0.6),
                 fontSize: 10,
               ),
             ),

@@ -1,108 +1,127 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../models/athlete.dart';
+import '../../services/database_service.dart';
 import '../common/chat_screen.dart';
-import 'athlete_progress.dart';
-import 'assign_program.dart';
+import '../../core/theme/app_theme.dart';
 
 class AthleteList extends StatelessWidget {
   const AthleteList({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sporcu Listesi'),
-        backgroundColor: const Color(0xFFE94560),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('athletes') // ← athletes olarak değiştir!
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    final db = DatabaseService();
+    final coachId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
 
+    return Scaffold(
+      appBar: AppBar(title: const Text('SPORCULARIM')),
+      body: StreamBuilder<List<Athlete>>(
+        stream: db.getAthletes(coachId),
+        builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Hata: ${snapshot.error}'));
           }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final athletes = snapshot.data!;
+
+          if (athletes.isEmpty) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.people_outline, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('Henüz sporcu eklenmemiş'),
+                  Icon(
+                    Icons.people_outline_rounded,
+                    size: 80,
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'Henüz sporcu eklenmemiş',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             );
           }
 
-          final athletes = snapshot.data!.docs;
-
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             itemCount: athletes.length,
             itemBuilder: (context, index) {
-              final athlete = athletes[index].data() as Map<String, dynamic>;
-              final name = athlete['name'] ?? 'İsimsiz';
-              final email = athlete['email'] ?? '';
-              final inviteCode = athlete['inviteCode'] ?? '';
-
-              // TARİH DÜZELTME
-              DateTime? createdAt;
-              if (athlete['createdAt'] != null) {
-                try {
-                  createdAt = DateTime.parse(athlete['createdAt']);
-                } catch (e) {
-                  createdAt = null;
-                }
-              }
-
+              final athlete = athletes[index];
               return Card(
-                color: const Color(0xFF1A1A2E),
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: const Color(0xFFE94560),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    alignment: Alignment.center,
                     child: Text(
-                      name.substring(0, 1).toUpperCase(),
+                      athlete.name[0].toUpperCase(),
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
                       ),
                     ),
                   ),
                   title: Text(
-                    name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    athlete.name,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  subtitle: Text(
+                    athlete.email,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(email),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Kod: $inviteCode',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[400],
-                            ),
-                          ),
-                          if (createdAt != null)
-                            Text(
-                              'Kayıt: ${createdAt.day}.${createdAt.month}.${createdAt.year}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[400],
+                      IconButton(
+                        icon: const Icon(
+                          Icons.forum_outlined,
+                          color: AppColors.primary,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChatScreen(
+                                athleteId: athlete.id,
+                                athleteName: athlete.name,
+                                currentUserId: coachId,
+                                isCoach: true,
                               ),
                             ),
-                        ],
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.assignment_ind_outlined,
+                          color: Colors.blueAccent,
+                        ),
+                        onPressed: () => _assignProgram(context, athlete, db),
                       ),
                     ],
                   ),
@@ -116,146 +135,158 @@ class AthleteList extends StatelessWidget {
     );
   }
 
-  void _showAthleteDetail(BuildContext context, Map<String, dynamic> athlete) {
+  void _showAthleteDetail(BuildContext context, Athlete athlete) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Sporcu Profili',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.displayLarge?.copyWith(fontSize: 24),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            _buildInfoTile(
+              context,
+              'AD SOYAD',
+              athlete.name,
+              Icons.person_outline_rounded,
+            ),
+            _buildInfoTile(
+              context,
+              'E-POSTA',
+              athlete.email,
+              Icons.email_outlined,
+            ),
+            _buildInfoTile(
+              context,
+              'DAVET KODU',
+              athlete.inviteCode,
+              Icons.vpn_key_outlined,
+            ),
+            _buildInfoTile(
+              context,
+              'KAYIT TARİHİ',
+              '${athlete.createdAt.day}/${athlete.createdAt.month}/${athlete.createdAt.year}',
+              Icons.calendar_today_outlined,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoTile(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: const Color(0xFFE94560),
-                    child: Text(
-                      athlete['name']?.substring(0, 1).toUpperCase() ?? '?',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          athlete['name'] ?? 'İsimsiz',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          athlete['email'] ?? '',
-                          style: TextStyle(color: Colors.grey[400]),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.key, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Davet Kodu:',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          SelectableText(
-                            athlete['inviteCode'] ?? '',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'İşlemler',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.fitness_center, color: Colors.orange),
-                title: const Text('Program Ata'),
-                onTap: () {
-                  Navigator.pop(context); // Önce bottom sheet'i kapat
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AssignProgram(
-                        athleteId: athlete['id'] ?? '',
-                        athleteName: athlete['name'] ?? 'İsimsiz',
-                      ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.show_chart, color: Colors.green),
-                title: const Text('İlerlemeyi Gör'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AthleteProgress(
-                        athleteId: athlete['id'] ?? '',
-                        athleteName: athlete['name'] ?? 'İsimsiz',
-                      ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.message, color: Colors.blue),
-                title: const Text('Mesaj Gönder'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatScreen(
-                        athleteId: athlete['id'] ?? '',
-                        athleteName: athlete['name'] ?? 'İsimsiz',
-                        currentUserId: 'admin',
-                        isCoach: true,
-                      ),
-                    ),
-                  );
-                },
+              Text(label, style: Theme.of(context).textTheme.labelSmall),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+
+  void _assignProgram(
+    BuildContext context,
+    Athlete athlete,
+    DatabaseService db,
+  ) async {
+    final coachId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+    final programs = await db.getPrograms(coachId).first;
+
+    if (programs.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Önce program oluşturun!')));
+      return;
+    }
+
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${athlete.name} için Program Seç'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: programs.length,
+            itemBuilder: (context, index) {
+              final program = programs[index];
+              return ListTile(
+                title: Text(program.name),
+                subtitle: Text('${program.exercises.length} egzersiz'),
+                trailing: program.assignedAthleteId == athlete.id
+                    ? const Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.primary,
+                      )
+                    : null,
+                onTap: () async {
+                  await db.assignProgramToAthlete(program.id, athlete.id);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${program.name} atandı!'),
+                        backgroundColor: AppColors.primary,
+                      ),
+                    );
+                  }
+                },
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }

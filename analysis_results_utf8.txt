@@ -1,0 +1,12 @@
+﻿Analyzing coach_app...                                          
+
+   info - The imported package 'uuid' isn't a dependency of the importing package - lib\screens\admin\add_athlete.dart:5:8 - depend_on_referenced_packages
+   info - Statements in an if should be enclosed in a block - lib\screens\admin\add_athlete.dart:169:21 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\admin\add_athlete.dart:183:21 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\admin\add_athlete.dart:185:21 - curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\athlete_list.dart:246:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\athlete_list.dart:252:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\athlete\athlete_profile.dart:51:33 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\athlete\athlete_profile.dart:52:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\athlete\athlete_profile.dart:227:27 - use_build_context_synchronously
+

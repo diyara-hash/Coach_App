@@ -11,27 +11,54 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # Firebase - EN GÜNCEL VERSİYONLAR
-  firebase_core: ^2.27.0
-  firebase_auth: ^4.17.8
-  cloud_firestore: ^4.15.8
-  firebase_storage: ^11.6.9
+  # Firebase
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  cloud_firestore: ^6.1.2
+  firebase_storage: ^13.0.6
   
   # UI & Utils
-  flutter_riverpod: ^2.5.1
-  go_router: ^13.2.0
+  flutter_riverpod: ^3.2.1
+  go_router: ^17.1.0
   video_player: ^2.8.2
   chewie: ^1.7.4
-  fl_chart: ^0.66.0
+  fl_chart: ^1.1.1
   image_picker: ^1.0.7
-  intl: ^0.19.0
+  intl: ^0.20.2
   cached_network_image: ^3.3.1
   uuid: ^4.3.3
+  
+  # YouTube Player - YENİ
+  youtube_player_iframe: ^5.2.2
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.2
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_logo.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/images/app_logo.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#000000"
+  image: "assets/images/splash_logo.png"
+  background_image: "assets/images/bg_main.png"
+  android_12:
+    color: "#000000"
+    image: "assets/images/splash_logo.png"
+    icon_background_color: "#000000"
+  fullscreen: true
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/bg_main.png
+    - assets/images/app_logo.png
+    - assets/images/splash_logo.png

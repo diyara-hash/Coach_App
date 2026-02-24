@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/athlete.dart';
-import '../../services/database_service.dart';
+import '../../core/theme/app_theme.dart';
 
 class AddAthlete extends StatefulWidget {
   const AddAthlete({super.key});
@@ -15,7 +17,6 @@ class _AddAthleteState extends State<AddAthlete> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _databaseService = DatabaseService();
   bool _isLoading = false;
 
   @override
@@ -25,42 +26,41 @@ class _AddAthleteState extends State<AddAthlete> {
     super.dispose();
   }
 
+  String _generateInviteCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final rnd = DateTime.now().microsecondsSinceEpoch;
+    String code = '';
+    for (var i = 0; i < 6; i++) {
+      code += chars[(rnd + i) % chars.length];
+    }
+    return 'TR-$code';
+  }
+
   Future<void> _saveAthlete() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final inviteCode = (const Uuid().v4().substring(0, 8)).toUpperCase();
-      final athlete = Athlete(
-        id: const Uuid().v4(),
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        inviteCode: inviteCode,
-        coachId: 'current_coach_id',
-        createdAt: DateTime.now(),
-      );
+      final coachId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+      final inviteCode = _generateInviteCode();
+      final athleteId = const Uuid().v4();
 
-      await _databaseService.addAthlete(athlete);
-
-      // Sporcu kaydederken şifre alanı boş bırak
       await FirebaseFirestore.instance
           .collection('athletes')
-          .doc(athlete.id)
+          .doc(athleteId)
           .set({
-            'name': _nameController.text,
-            'email': _emailController.text,
+            'id': athleteId,
+            'name': _nameController.text.trim(),
+            'email': _emailController.text.trim(),
             'inviteCode': inviteCode,
-            'password': null, // ← İlk başta null
-            'coachId': athlete.coachId,
+            'password': null,
+            'coachId': coachId,
             'createdAt': FieldValue.serverTimestamp(),
           });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sporcu başarıyla eklendi!')),
-        );
-        Navigator.pop(context);
+        _showSuccessDialog(inviteCode);
       }
     } catch (e) {
       if (mounted) {
@@ -75,25 +75,94 @@ class _AddAthleteState extends State<AddAthlete> {
     }
   }
 
+  void _showSuccessDialog(String code) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Sporcu Eklendi! 🎉'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Sporcunun kayıt olması için bu kodu paylaşın:',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Text(
+                code,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 4,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: code));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Kod kopyalandı!')));
+            },
+            child: const Text('KOPYALA'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(minimumSize: const Size(100, 44)),
+            child: const Text('TAMAM'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Yeni Sporcu Ekle'),
-        backgroundColor: const Color(0xFFE94560),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      appBar: AppBar(title: const Text('YENİ SPORCU EKLE')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Text(
+                'Sporcu Bilgilerini Girin',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Davet kodu otomatik olarak oluşturulacaktır.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: AppSpacing.xl),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Sporcu Adı Soyadı',
-                  prefixIcon: Icon(Icons.person),
+                  labelText: 'Ad Soyad',
+                  prefixIcon: Icon(Icons.person_outline_rounded),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -102,12 +171,12 @@ class _AddAthleteState extends State<AddAthlete> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
-                  labelText: 'E-posta Adresi',
-                  prefixIcon: Icon(Icons.email),
+                  labelText: 'E-posta',
+                  prefixIcon: Icon(Icons.email_outlined),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
@@ -120,19 +189,16 @@ class _AddAthleteState extends State<AddAthlete> {
                   return null;
                 },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveAthlete,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE94560),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
                 child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Sporcuyu Kaydet',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(color: Colors.black),
+                      )
+                    : const Text('SPORCUYU KAYDET'),
               ),
             ],
           ),

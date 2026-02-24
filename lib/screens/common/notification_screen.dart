@@ -14,7 +14,7 @@ class NotificationScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
         title: const Text('Bildirimler'),
-        backgroundColor: const Color(0xFFE94560),
+        backgroundColor: const Color(0xFF00FF7F),
         actions: [
           TextButton(
             onPressed: () => _markAllAsRead(),
@@ -102,13 +102,13 @@ class _NotificationItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: notification.isRead
-            ? const Color(0xFF1A1A2E).withOpacity(0.5)
+            ? const Color(0xFF1A1A2E).withValues(alpha: 0.5)
             : const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: notification.isRead
               ? Colors.transparent
-              : Colors.green.withOpacity(0.3),
+              : Colors.green.withValues(alpha: 0.3),
         ),
       ),
       child: ListTile(

@@ -1,0 +1,18 @@
+﻿Analyzing coach_app...                                          
+
+   info - The imported package 'uuid' isn't a dependency of the importing package - lib\screens\admin\add_athlete.dart:3:8 - depend_on_referenced_packages
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\admin\athlete_list.dart:171:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\admin\athlete_progress.dart:74:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\admin\athlete_progress.dart:75:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\admin\athlete_progress.dart:82:50 - deprecated_member_use
+  error - Expected to find '}' - lib\screens\admin\program_builder.dart:243:1 - expected_token
+  error - Expected to find '}' - lib\screens\athlete\athlete_home.dart:132:1 - expected_token
+   info - Don't use 'BuildContext's across async gaps - lib\screens\auth\login_screen.dart:34:13 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\auth\login_screen.dart:41:11 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\auth\login_screen.dart:61:11 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\auth\login_screen.dart:68:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\auth\login_screen.dart:75:9 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\common\chat_screen.dart:200:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\common\notification_screen.dart:105:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\common\notification_screen.dart:111:30 - deprecated_member_use
+

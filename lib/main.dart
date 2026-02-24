@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // FlutterFire oluşturacak
+import 'firebase_options.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/common/splash_screen.dart';
+import 'core/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,17 +17,10 @@ class CoachApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Coach App',
+      title: 'MyCoach',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE94560),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF0A0A0A),
-      ),
-      home: const LoginScreen(),
+      theme: AppTheme.darkTheme,
+      home: const SplashScreen(),
     );
   }
 }

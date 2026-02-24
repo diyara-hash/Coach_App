@@ -18,7 +18,7 @@ class AthleteProgress extends StatelessWidget {
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
         title: Text('$athleteName - İlerleme'),
-        backgroundColor: const Color(0xFFE94560),
+        backgroundColor: const Color(0xFF00FF7F),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -71,15 +71,15 @@ class AthleteProgress extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: type == 'program_complete'
-                        ? Colors.green.withOpacity(0.3)
-                        : Colors.white.withOpacity(0.05),
+                        ? Colors.green.withValues(alpha: 0.3)
+                        : Colors.white.withValues(alpha: 0.05),
                   ),
                 ),
                 child: ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _getIconColor(type).withOpacity(0.2),
+                      color: _getIconColor(type).withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
