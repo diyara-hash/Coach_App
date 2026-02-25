@@ -7,7 +7,7 @@ import '../common/chat_screen.dart';
 import 'athlete_profile.dart';
 import '../../core/theme/app_theme.dart';
 
-import '../../features/measurements/student_measurement_form.dart';
+import '../../features/student/student_dashboard.dart';
 
 class AthleteHome extends StatefulWidget {
   final String athleteId;
@@ -24,7 +24,7 @@ class _AthleteHomeState extends State<AthleteHome> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       _WorkoutList(athleteId: widget.athleteId),
-      StudentMeasurementForm(athleteId: widget.athleteId),
+      StudentDashboard(athleteId: widget.athleteId),
     ];
 
     return Scaffold(
@@ -126,13 +126,15 @@ class _WorkoutList extends StatelessWidget {
                   Icon(
                     Icons.fitness_center_rounded,
                     size: 80,
-                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withOpacity(0.3),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
                     'Henüz program atanmamış',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -231,7 +233,9 @@ class _WorkoutList extends StatelessWidget {
                                             .textTheme
                                             .bodyMedium
                                             ?.copyWith(
-                                              color: AppColors.textPrimary,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
                                             ),
                                         overflow: TextOverflow.ellipsis,
                                       ),

@@ -5,8 +5,10 @@ import 'program_builder.dart';
 import 'program_list.dart';
 import 'athlete_list.dart';
 import '../../core/theme/app_theme.dart';
-
+import '../../core/widgets/elite_glass_card.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../features/admin/admin_measurements_panel.dart';
+import '../../core/utils/app_haptics.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -30,77 +32,134 @@ class AdminDashboard extends StatelessWidget {
         ],
       ),
       drawer: Drawer(
-        backgroundColor: AppColors.surface,
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: AppTheme.primaryGradient,
-              child: const Center(
-                child: Text(
-                  'MYCOACH PRO',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.xxl,
+                  AppSpacing.xl,
+                  AppSpacing.lg,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: AppTheme.primaryGradient.copyWith(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [AppColors.emeraldGlow],
+                      ),
+                      child: const Icon(
+                        Icons.fitness_center_rounded,
+                        color: Colors.black,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'MYCOACH',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          Text(
+                            'PRO',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
+                              letterSpacing: 3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.dashboard_rounded,
-                color: AppColors.primary,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: Divider(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.1),
+                ),
               ),
-              title: const Text('Dashboard'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.people_alt_rounded,
-                color: AppColors.primary,
+              const SizedBox(height: AppSpacing.md),
+              _buildDrawerItem(
+                context,
+                icon: Icons.dashboard_rounded,
+                title: 'Dashboard',
+                isActive: true,
+                onTap: () {
+                  AppHaptics.selectionClick();
+                  Navigator.pop(context);
+                },
               ),
-              title: const Text('Sporcular'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AthleteList()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.straighten_rounded,
-                color: AppColors.primary,
+              _buildDrawerItem(
+                context,
+                icon: Icons.people_alt_rounded,
+                title: 'Sporcular',
+                onTap: () {
+                  AppHaptics.selectionClick();
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AthleteList()),
+                  );
+                },
               ),
-              title: const Text('Öğrenci Ölçüleri'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AdminMeasurementsPanel(),
-                  ),
-                );
-              },
-            ),
-            const Spacer(),
-            ListTile(
-              leading: const Icon(
-                Icons.logout_rounded,
-                color: Colors.redAccent,
+              _buildDrawerItem(
+                context,
+                icon: Icons.straighten_rounded,
+                title: 'Öğrenci Ölçüleri',
+                onTap: () {
+                  AppHaptics.selectionClick();
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AdminMeasurementsPanel(),
+                    ),
+                  );
+                },
               ),
-              title: const Text('Çıkış Yap'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: Divider(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.1),
+                ),
+              ),
+              _buildDrawerItem(
+                context,
+                icon: Icons.logout_rounded,
+                title: 'Çıkış Yap',
+                isDestructive: true,
+                onTap: () {
+                  AppHaptics.heavyImpact();
+                  Navigator.pop(context);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+          ),
         ),
       ),
       body: Padding(
@@ -134,6 +193,7 @@ class AdminDashboard extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const AthleteList()),
                       );
                     },
+                    0,
                   ),
                   _buildMenuCard(
                     context,
@@ -147,6 +207,7 @@ class AdminDashboard extends StatelessWidget {
                         ),
                       );
                     },
+                    1,
                   ),
                   _buildMenuCard(
                     context,
@@ -158,6 +219,7 @@ class AdminDashboard extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const ProgramList()),
                       );
                     },
+                    2,
                   ),
                   _buildMenuCard(
                     context,
@@ -171,6 +233,7 @@ class AdminDashboard extends StatelessWidget {
                         ),
                       );
                     },
+                    3,
                   ),
                   _buildMenuCard(
                     context,
@@ -182,13 +245,14 @@ class AdminDashboard extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const AddAthlete()),
                       );
                     },
+                    4,
                   ),
                   _buildMenuCard(context, 'Mesajlar', Icons.forum_rounded, () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const AthleteList()),
                     );
-                  }),
+                  }, 5),
                 ],
               ),
             ),
@@ -203,38 +267,80 @@ class AdminDashboard extends StatelessWidget {
     String title,
     IconData icon,
     VoidCallback onTap,
+    int index,
   ) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+    return GestureDetector(
+          onTap: onTap,
+          child: EliteGlassCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Icon(icon, size: 32, color: AppColors.primary),
                 ),
-                child: Icon(icon, size: 32, color: AppColors.primary),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        )
+        .animate()
+        .fade(duration: 400.ms, delay: (index * 50).ms)
+        .scaleXY(begin: 0.9, duration: 400.ms, curve: Curves.easeOutBack);
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isActive = false,
+    bool isDestructive = false,
+  }) {
+    final activeColor = Theme.of(context).brightness == Brightness.dark
+        ? AppColors.primary
+        : AppColors.primaryDark;
+
+    final color = isDestructive
+        ? Colors.redAccent
+        : isActive
+        ? activeColor
+        : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 4,
+      ),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        tileColor: isActive
+            ? activeColor.withValues(alpha: 0.1)
+            : Colors.transparent,
+        leading: Icon(icon, color: color),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: isActive || isDestructive ? color : null,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
           ),
         ),
+        onTap: onTap,
       ),
     );
   }

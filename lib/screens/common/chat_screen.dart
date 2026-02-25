@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../models/message_model.dart';
+import '../../core/theme/app_theme.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:ui';
 
 class ChatScreen extends StatefulWidget {
   final String athleteId;
@@ -78,91 +81,170 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(
           widget.isCoach ? widget.athleteName : 'Coach',
-          style: const TextStyle(color: Colors.black),
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
-        backgroundColor: const Color(0xFF00FF7F),
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('chats')
-                  .doc(widget.athleteId)
-                  .collection('messages')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Henüz mesaj yok.',
-                      style: TextStyle(color: Colors.grey[400]),
-                    ),
-                  );
-                }
-
-                final messages = snapshot.data!.docs
-                    .map(
-                      (doc) => MessageModel.fromMap(
-                        doc.data() as Map<String, dynamic>,
-                      ),
-                    )
-                    .toList();
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  reverse: true,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMe = message.senderId == widget.currentUserId;
-
-                    return _MessageBubble(message: message, isMe: isMe);
-                  },
-                );
-              },
-            ),
+        backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.transparent),
           ),
-          _buildMessageInput(),
+        ),
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('chats')
+                .doc(widget.athleteId)
+                .collection('messages')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Text(
+                    'Henüz mesaj yok.',
+                    style: TextStyle(color: Colors.grey[400]),
+                  ),
+                );
+              }
+
+              final messages = snapshot.data!.docs
+                  .map(
+                    (doc) => MessageModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                    ),
+                  )
+                  .toList();
+
+              return ListView.builder(
+                controller: _scrollController,
+                reverse: true,
+                padding: EdgeInsets.only(
+                  top: AppSpacing.md,
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  bottom:
+                      MediaQuery.of(context).viewInsets.bottom +
+                      100, // Account for glass input
+                ),
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  final message = messages[index];
+                  final isMe = message.senderId == widget.currentUserId;
+
+                  return _MessageBubble(
+                    message: message,
+                    isMe: isMe,
+                  ).animate().fade(duration: 300.ms).slideY(begin: 0.1);
+                },
+              );
+            },
+          ),
+          Positioned(left: 0, right: 0, bottom: 0, child: _buildMessageInput()),
         ],
       ),
     );
   }
 
   Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      color: const Color(0xFF1A1A2E),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: 'Mesajınızı yazın...',
-                hintStyle: TextStyle(color: Colors.grey[400]),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewPadding.bottom > 0
+                ? MediaQuery.of(context).viewPadding.bottom
+                : AppSpacing.md,
+            top: AppSpacing.sm,
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               ),
-              style: const TextStyle(color: Colors.white),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.send, color: Color(0xFF00FF7F)),
-            onPressed: _sendMessage,
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          decoration: const InputDecoration(
+                            hintText: 'Mesaj...',
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: 14,
+                            ),
+                          ),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          maxLines: 4,
+                          minLines: 1,
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.only(right: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                          boxShadow: [AppColors.emeraldGlow],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_upward_rounded,
+                            color: Colors.black,
+                            size: 20,
+                          ),
+                          onPressed: _sendMessage,
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -179,35 +261,64 @@ class _MessageBubble extends StatelessWidget {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isMe ? const Color(0xFF00FF7F) : const Color(0xFF16213E),
+          color: isMe
+              ? null
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
+          gradient: isMe
+              ? const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          boxShadow: isMe ? [AppColors.emeraldGlow] : [AppColors.eliteShadow],
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isMe ? 16 : 0),
-            bottomRight: Radius.circular(isMe ? 0 : 16),
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(isMe ? 20 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 20),
           ),
+          border: isMe
+              ? null
+              : Border.all(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.1),
+                ),
         ),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
               message.text,
-              style: TextStyle(color: isMe ? Colors.black : Colors.white),
+              style: TextStyle(
+                color: isMe
+                    ? Colors.black
+                    : Theme.of(context).colorScheme.onSurface,
+                fontSize: 15,
+                height: 1.4,
+                fontWeight: isMe ? FontWeight.w500 : FontWeight.w400,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               DateFormat('HH:mm').format(message.timestamp),
               style: TextStyle(
                 color: isMe
-                    ? Colors.black.withValues(alpha: 0.6)
-                    : Colors.white.withValues(alpha: 0.6),
-                fontSize: 10,
+                    ? Colors.black54
+                    : Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

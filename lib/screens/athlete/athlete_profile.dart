@@ -4,7 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/athlete.dart';
 import '../../services/database_service.dart';
 import '../auth/login_screen.dart';
+import '../../main.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/elite_glass_card.dart';
+import '../../core/utils/app_haptics.dart';
+import 'package:flutter/cupertino.dart';
 
 class AthleteProfile extends StatefulWidget {
   final String athleteId;
@@ -135,30 +139,43 @@ class _AthleteProfileState extends State<AthleteProfile> {
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.5),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    border: Border.all(color: AppColors.primary, width: 4),
+                    boxShadow: [AppColors.emeraldGlow],
                   ),
                   child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppColors.surface,
+                    radius: 60, // 120px diameter
+                    backgroundColor: AppColors.surfaceElevated,
                     child: Text(
                       athlete.name.isNotEmpty
                           ? athlete.name[0].toUpperCase()
                           : '?',
                       style: const TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 48,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.primary,
                       ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Text(
+                    'Premium Üye',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
                     ),
                   ),
                 ),
@@ -209,7 +226,7 @@ class _AthleteProfileState extends State<AthleteProfile> {
                   ),
                 ] else ...[
                   Text(
-                    athlete.name.toUpperCase(),
+                    athlete.name,
                     textAlign: TextAlign.center,
                     style: Theme.of(
                       context,
@@ -218,9 +235,13 @@ class _AthleteProfileState extends State<AthleteProfile> {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     athlete.email,
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
+
+                  // Info Cards
                   _buildInfoItem(
                     Icons.phone_rounded,
                     'Telefon',
@@ -237,37 +258,128 @@ class _AthleteProfileState extends State<AthleteProfile> {
                     athlete.inviteCode,
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.lock_outline_rounded,
-                        color: AppColors.primary,
-                      ),
-                      title: const Text('Şifre Değiştir'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: _showPasswordDialog,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.logout_rounded,
-                        color: Colors.redAccent,
-                      ),
-                      title: const Text('Çıkış Yap'),
-                      onTap: () async {
-                        await FirebaseAuth.instance.signOut();
-                        if (context.mounted) {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LoginScreen(),
+
+                  // Settings List
+                  EliteGlassCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
+                          ),
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
                             ),
-                            (route) => false,
-                          );
-                        }
-                      },
+                            child: const Icon(
+                              Icons.lock_outline_rounded,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          title: const Text(
+                            'Şifre Değiştir',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          trailing: Icon(
+                            Icons.chevron_right_rounded,
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
+                          ),
+                          onTap: _showPasswordDialog,
+                        ),
+                        const Divider(
+                          color: AppColors.border,
+                          height: 1,
+                          indent: 64,
+                        ),
+                        ListenableBuilder(
+                          listenable: themeProvider,
+                          builder: (context, _) {
+                            final isDark =
+                                themeProvider.themeMode == ThemeMode.dark;
+                            return ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.lg,
+                                vertical: AppSpacing.sm,
+                              ),
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accent.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isDark
+                                      ? Icons.dark_mode_rounded
+                                      : Icons.light_mode_rounded,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                              title: const Text(
+                                'Karanlık Mod',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                              trailing: CupertinoSwitch(
+                                value: isDark,
+                                activeColor: AppColors.primary,
+                                onChanged: (val) {
+                                  themeProvider.setTheme(
+                                    val ? ThemeMode.dark : ThemeMode.light,
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(
+                          color: AppColors.border,
+                          height: 1,
+                          indent: 64,
+                        ),
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
+                          ),
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.logout_rounded,
+                              color: AppColors.error,
+                            ),
+                          ),
+                          title: const Text(
+                            'Çıkış Yap',
+                            style: TextStyle(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          onTap: () async {
+                            await FirebaseAuth.instance.signOut();
+                            if (context.mounted) {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                CupertinoPageRoute(
+                                  builder: (_) => const LoginScreen(),
+                                ),
+                                (route) => false,
+                              );
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -280,45 +392,43 @@ class _AthleteProfileState extends State<AthleteProfile> {
   }
 
   Widget _buildInfoItem(IconData icon, String label, String value) {
-    return Card(
+    return EliteGlassCard(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 20),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label.toUpperCase(),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(fontSize: 10),
+            child: Icon(icon, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

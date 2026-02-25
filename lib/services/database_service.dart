@@ -13,6 +13,10 @@ class DatabaseService {
         .set(athlete.toMap());
   }
 
+  Future<void> deleteAthlete(String athleteId) async {
+    await _firestore.collection('athletes').doc(athleteId).delete();
+  }
+
   Stream<List<Athlete>> getAthletes(String coachId) {
     return _firestore
         .collection('athletes')
@@ -50,6 +54,10 @@ class DatabaseService {
         .collection('programs')
         .doc(program.id)
         .set(program.toMap());
+  }
+
+  Future<void> deleteProgram(String programId) async {
+    await _firestore.collection('programs').doc(programId).delete();
   }
 
   Stream<List<Program>> getPrograms(String coachId) {
@@ -129,5 +137,100 @@ class DatabaseService {
     await _firestore.collection('measurements').doc(measurementId).update({
       'isRead': true,
     });
+  }
+
+  // ===== CRM =====
+  Stream<DocumentSnapshot> getAthleteCrmProfile(String athleteId) {
+    return _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm')
+        .doc('profile')
+        .snapshots();
+  }
+
+  Future<void> updateAthleteCrmProfile(
+    String athleteId,
+    Map<String, dynamic> data,
+  ) async {
+    await _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm')
+        .doc('profile')
+        .set(data, SetOptions(merge: true));
+  }
+
+  Stream<QuerySnapshot> getAthleteGoals(String athleteId) {
+    return _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm_goals')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  Future<void> addAthleteGoal(
+    String athleteId,
+    Map<String, dynamic> goalData,
+  ) async {
+    await _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm_goals')
+        .add({...goalData, 'createdAt': FieldValue.serverTimestamp()});
+  }
+
+  Future<void> updateAthleteGoal(
+    String athleteId,
+    String goalId,
+    Map<String, dynamic> goalData,
+  ) async {
+    await _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm_goals')
+        .doc(goalId)
+        .update(goalData);
+  }
+
+  Stream<QuerySnapshot> getAthleteNotes(String athleteId) {
+    return _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm_notes')
+        .orderBy('date', descending: true)
+        .snapshots();
+  }
+
+  Future<void> addAthleteNote(
+    String athleteId,
+    Map<String, dynamic> noteData,
+  ) async {
+    await _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm_notes')
+        .add({...noteData, 'createdAt': FieldValue.serverTimestamp()});
+  }
+
+  Stream<QuerySnapshot> getAthleteFiles(String athleteId) {
+    return _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm_files')
+        .orderBy('uploadedAt', descending: true)
+        .snapshots();
+  }
+
+  Future<void> addAthleteFile(
+    String athleteId,
+    Map<String, dynamic> fileData,
+  ) async {
+    await _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm_files')
+        .add({...fileData, 'uploadedAt': FieldValue.serverTimestamp()});
   }
 }

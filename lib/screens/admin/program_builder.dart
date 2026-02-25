@@ -6,7 +6,9 @@ import '../../services/database_service.dart';
 import '../../core/theme/app_theme.dart';
 
 class ProgramBuilder extends StatefulWidget {
-  const ProgramBuilder({super.key});
+  final Program? program;
+
+  const ProgramBuilder({super.key, this.program});
 
   @override
   State<ProgramBuilder> createState() => _ProgramBuilderState();
@@ -17,6 +19,24 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
   final List<Map<String, dynamic>> exercises = [];
   final DatabaseService _db = DatabaseService();
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.program != null) {
+      _dayNameController.text = widget.program!.name;
+      for (var ex in widget.program!.exercises) {
+        exercises.add({
+          'name': ex.name,
+          'sets': ex.sets,
+          'videoId': ex.videoId,
+          'video': ex.videoId != null
+              ? 'https://youtube.com/watch?v=${ex.videoId}'
+              : '',
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -177,8 +197,13 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
     try {
       final coachId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
 
+      final programId =
+          widget.program?.id ??
+          DateTime.now().millisecondsSinceEpoch.toString();
+      final programCreatedAt = widget.program?.createdAt ?? DateTime.now();
+
       final program = Program(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: programId,
         name: _dayNameController.text.trim(),
         coachId: coachId,
         exercises: exercises
@@ -190,7 +215,7 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
               ),
             )
             .toList(),
-        createdAt: DateTime.now(),
+        createdAt: programCreatedAt,
       );
 
       await _db.addProgram(program);
@@ -218,7 +243,11 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('PROGRAM OLUŞTUR')),
+      appBar: AppBar(
+        title: Text(
+          widget.program != null ? 'PROGRAM DÜZENLE' : 'PROGRAM OLUŞTUR',
+        ),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -267,10 +296,12 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
                       vertical: AppSpacing.xxl,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.05),
                       ),
                     ),
                     child: Column(
@@ -278,12 +309,18 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
                         Icon(
                           Icons.fitness_center_rounded,
                           size: 48,
-                          color: AppColors.textSecondary.withValues(alpha: 0.2),
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withOpacity(0.2),
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        const Text(
+                        Text(
                           'Henüz egzersiz eklenmedi.',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                          ),
                         ),
                       ],
                     ),
@@ -345,9 +382,15 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
           ),
           Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(top: BorderSide(color: Colors.white10)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              border: Border(
+                top: BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.1),
+                ),
+              ),
             ),
             child: Container(
               width: double.infinity,
@@ -361,10 +404,12 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
                   minimumSize: Size.zero,
                 ),
                 child: _isSaving
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 24,
                         width: 24,
-                        child: CircularProgressIndicator(color: Colors.black),
+                        child: CircularProgressIndicator(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       )
                     : const Text('PROGRAMI KAYDET'),
               ),

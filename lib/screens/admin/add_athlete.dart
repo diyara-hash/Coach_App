@@ -7,7 +7,9 @@ import '../../models/athlete.dart';
 import '../../core/theme/app_theme.dart';
 
 class AddAthlete extends StatefulWidget {
-  const AddAthlete({super.key});
+  final Athlete? athlete;
+
+  const AddAthlete({super.key, this.athlete});
 
   @override
   State<AddAthlete> createState() => _AddAthleteState();
@@ -18,6 +20,15 @@ class _AddAthleteState extends State<AddAthlete> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.athlete != null) {
+      _nameController.text = widget.athlete!.name;
+      _emailController.text = widget.athlete!.email;
+    }
+  }
 
   @override
   void dispose() {
@@ -43,8 +54,11 @@ class _AddAthleteState extends State<AddAthlete> {
 
     try {
       final coachId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
-      final inviteCode = _generateInviteCode();
-      final athleteId = const Uuid().v4();
+      final isEditing = widget.athlete != null;
+      final inviteCode = isEditing
+          ? widget.athlete!.inviteCode
+          : _generateInviteCode();
+      final athleteId = isEditing ? widget.athlete!.id : const Uuid().v4();
 
       await FirebaseFirestore.instance
           .collection('athletes')
@@ -54,13 +68,20 @@ class _AddAthleteState extends State<AddAthlete> {
             'name': _nameController.text.trim(),
             'email': _emailController.text.trim(),
             'inviteCode': inviteCode,
-            'password': null,
-            'coachId': coachId,
-            'createdAt': FieldValue.serverTimestamp(),
-          });
+            if (!isEditing) 'password': null,
+            if (!isEditing) 'coachId': coachId,
+            if (!isEditing) 'createdAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
 
       if (mounted) {
-        _showSuccessDialog(inviteCode);
+        if (!isEditing) {
+          _showSuccessDialog(inviteCode);
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Sporcu güncellendi!')));
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -84,10 +105,14 @@ class _AddAthleteState extends State<AddAthlete> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Sporcunun kayıt olması için bu kodu paylaşın:',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withOpacity(0.7),
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Container(
@@ -140,7 +165,11 @@ class _AddAthleteState extends State<AddAthlete> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('YENİ SPORCU EKLE')),
+      appBar: AppBar(
+        title: Text(
+          widget.athlete != null ? 'SPORCUYU DÜZENLE' : 'YENİ SPORCU EKLE',
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Form(
@@ -193,12 +222,18 @@ class _AddAthleteState extends State<AddAthlete> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveAthlete,
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 24,
                         width: 24,
-                        child: CircularProgressIndicator(color: Colors.black),
+                        child: CircularProgressIndicator(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       )
-                    : const Text('SPORCUYU KAYDET'),
+                    : Text(
+                        widget.athlete != null
+                            ? 'SPORCUYU GÜNCELLE'
+                            : 'SPORCUYU KAYDET',
+                      ),
               ),
             ],
           ),

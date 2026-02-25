@@ -4,6 +4,10 @@ import 'firebase_options.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/common/splash_screen.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
+import 'core/widgets/offline_banner.dart';
+
+final themeProvider = ThemeProvider();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,11 +20,21 @@ class CoachApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MyCoach',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const SplashScreen(),
+    return ListenableBuilder(
+      listenable: themeProvider,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'MyCoach',
+          debugShowCheckedModeBanner: false,
+          themeMode: themeProvider.themeMode,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          builder: (context, child) {
+            return OfflineBanner(child: child ?? const SizedBox());
+          },
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }
