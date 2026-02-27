@@ -1,35 +1,23 @@
-// ignore_for_file: deprecated_member_use
-
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:flutter/material.dart';
 import '../../models/athlete.dart';
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/elite_glass_card.dart';
 import '../../core/utils/app_haptics.dart';
-import '../../core/utils/pdf_report_generator.dart';
 import '../../services/database_service.dart';
-import 'package:coach_app/services/cloudinary_service.dart';
-import 'package:coach_app/services/file_download_service.dart';
 
-class StudentCrmPage extends StatefulWidget {
+class AthleteCrmPage extends StatefulWidget {
   final Athlete athlete;
 
-  const StudentCrmPage({super.key, required this.athlete});
+  const AthleteCrmPage({super.key, required this.athlete});
 
   @override
-  State<StudentCrmPage> createState() => _StudentCrmPageState();
+  State<AthleteCrmPage> createState() => _AthleteCrmPageState();
 }
 
-class _StudentCrmPageState extends State<StudentCrmPage>
+class _AthleteCrmPageState extends State<AthleteCrmPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final DatabaseService _db = DatabaseService();
-  // ignore: unused_field
-  final _uploadService = CloudinaryService();
-  final _downloadService = FileDownloadService();
 
   // Personal Controllers
   final _ageController = TextEditingController();
@@ -92,7 +80,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         AppHaptics.selectionClick();
@@ -112,14 +100,14 @@ class _StudentCrmPageState extends State<StudentCrmPage>
         _ageController.text = personal['age']?.toString() ?? '';
         _jobController.text = personal['job'] ?? '';
         _phoneController.text = personal['phone'] ?? '';
-        _goalValue = _goalOptions.cast<String?>().firstWhere(
+        _goalValue = _goalOptions.firstWhere(
           (opt) =>
-              opt?.toLowerCase() == personal['goal']?.toString().toLowerCase(),
+              opt.toLowerCase() == personal['goal']?.toString().toLowerCase(),
           orElse: () => _goalOptions.first,
         );
-        _levelValue = _levelOptions.cast<String?>().firstWhere(
+        _levelValue = _levelOptions.firstWhere(
           (opt) =>
-              opt?.toLowerCase() == personal['level']?.toString().toLowerCase(),
+              opt.toLowerCase() == personal['level']?.toString().toLowerCase(),
           orElse: () => _levelOptions.first,
         );
 
@@ -130,9 +118,9 @@ class _StudentCrmPageState extends State<StudentCrmPage>
         _selectedDiseases = List<String>.from(health['diseases'] ?? []);
 
         final nutrition = data['nutrition'] ?? {};
-        _dietTypeValue = _dietOptions.cast<String?>().firstWhere(
+        _dietTypeValue = _dietOptions.firstWhere(
           (opt) =>
-              opt?.toLowerCase() ==
+              opt.toLowerCase() ==
               nutrition['dietType']?.toString().toLowerCase(),
           orElse: () => _dietOptions.first,
         );
@@ -266,70 +254,18 @@ class _StudentCrmPageState extends State<StudentCrmPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.athlete.name} - CRM'),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.picture_as_pdf_rounded,
-              color: Colors.redAccent,
-            ),
-            onPressed: () async {
-              AppHaptics.lightImpact();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PDF Raporu hazırlanıyor...')),
-              );
-              try {
-                final profileSnap = await _db
-                    .getAthleteCrmProfile(widget.athlete.id)
-                    .first;
-                final notesSnap = await _db
-                    .getAthleteNotes(widget.athlete.id)
-                    .first;
-                final measurementsSnap = await _db
-                    .getMeasurements(studentId: widget.athlete.id)
-                    .first;
-
-                final profileData =
-                    profileSnap.data() as Map<String, dynamic>? ?? {};
-                final notesData = notesSnap.docs
-                    .map((d) => d.data() as Map<String, dynamic>)
-                    .toList();
-                final measurementsData = measurementsSnap;
-
-                await PdfReportGenerator.generateAndShareReport(
-                  athlete: widget.athlete,
-                  crmProfile: profileData,
-                  notes: notesData,
-                  measurements: measurementsData,
-                );
-                AppHaptics.mediumImpact();
-              } catch (e) {
-                AppHaptics.heavyImpact();
-                if (mounted) {
-                  // ignore: use_build_context_synchronously
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Rapor hatası: $e'),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                }
-              }
-            },
-          ),
-          const SizedBox(width: AppSpacing.sm),
-        ],
+        title: const Text('BİLGİLERİM VE HEDEFLERİM'),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primary,
           unselectedLabelColor: Theme.of(
             context,
+            // ignore: deprecated_member_use
           ).textTheme.bodyMedium?.color?.withOpacity(0.7),
           tabs: const [
             Tab(text: 'PROFİL', icon: Icon(Icons.person_pin_rounded)),
             Tab(text: 'HEDEFLER', icon: Icon(Icons.flag_rounded)),
-            Tab(text: 'DOSYALAR', icon: Icon(Icons.folder_special_rounded)),
           ],
         ),
       ),
@@ -337,11 +273,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
           ? const Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
-              children: [
-                _buildProfileTab(),
-                _buildGoalsTab(),
-                _buildNotesFilesTab(),
-              ],
+              children: [_buildProfileTab(), _buildGoalsTab()],
             ),
       floatingActionButton:
           _tabController.index == 0 || _tabController.index == 1
@@ -406,6 +338,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
             ],
           ),
           Divider(
+            // ignore: deprecated_member_use
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             height: AppSpacing.xl,
           ),
@@ -444,7 +377,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
           ),
           const SizedBox(height: AppSpacing.md),
           DropdownButtonFormField<String>(
-            value: _goalValue,
+            initialValue: _goalValue,
             decoration: const InputDecoration(
               labelText: 'Temel Hedef',
               prefixIcon: Icon(Icons.track_changes_rounded, size: 20),
@@ -456,7 +389,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
           ),
           const SizedBox(height: AppSpacing.md),
           DropdownButtonFormField<String>(
-            value: _levelValue,
+            initialValue: _levelValue,
             decoration: const InputDecoration(
               labelText: 'Deneyim Seviyesi',
               prefixIcon: Icon(Icons.fitness_center_rounded, size: 20),
@@ -491,6 +424,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
             ],
           ),
           Divider(
+            // ignore: deprecated_member_use
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             height: AppSpacing.xl,
           ),
@@ -522,6 +456,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
               return FilterChip(
                 label: Text(disease),
                 selected: isSelected,
+                // ignore: deprecated_member_use
                 selectedColor: AppColors.primary.withOpacity(0.2),
                 checkmarkColor: AppColors.primary,
                 onSelected: (bool selected) {
@@ -541,7 +476,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
             title: const Text('Doktor Onayı Var Mı?'),
             subtitle: const Text('Spora başlamasında sakınca yoktur.'),
             value: _doctorApproved,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
             onChanged: (val) => setState(() => _doctorApproved = val),
             contentPadding: EdgeInsets.zero,
           ),
@@ -567,11 +502,12 @@ class _StudentCrmPageState extends State<StudentCrmPage>
             ],
           ),
           Divider(
+            // ignore: deprecated_member_use
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             height: AppSpacing.xl,
           ),
           DropdownButtonFormField<String>(
-            value: _dietTypeValue,
+            initialValue: _dietTypeValue,
             decoration: const InputDecoration(
               labelText: 'Diyet Tipi',
               prefixIcon: Icon(Icons.grass_rounded, size: 20),
@@ -663,6 +599,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
                   value: progress,
                   backgroundColor: Theme.of(
                     context,
+                    // ignore: deprecated_member_use
                   ).colorScheme.onSurface.withOpacity(0.1),
                   color: AppColors.primary,
                   minHeight: 12,
@@ -742,6 +679,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
             ],
           ),
           Divider(
+            // ignore: deprecated_member_use
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             height: AppSpacing.xl,
           ),
@@ -782,6 +720,7 @@ class _StudentCrmPageState extends State<StudentCrmPage>
                       border: Border.all(
                         color: Theme.of(
                           context,
+                          // ignore: deprecated_member_use
                         ).colorScheme.onSurface.withOpacity(0.1),
                       ),
                     ),
@@ -818,407 +757,6 @@ class _StudentCrmPageState extends State<StudentCrmPage>
         ],
       ),
     );
-  }
-
-  Widget _buildNotesFilesTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Koç Notları',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              ElevatedButton.icon(
-                onPressed: _showAddNoteModal,
-                icon: Icon(
-                  Icons.add_rounded,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
-                label: Text(
-                  'Yeni Not',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: 0,
-                  ),
-                  minimumSize: const Size(0, 36),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          StreamBuilder<QuerySnapshot>(
-            stream: _db.getAthleteNotes(widget.athlete.id),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const CircularProgressIndicator();
-              }
-              final notes = snapshot.data?.docs ?? [];
-              if (notes.isEmpty) {
-                return Text(
-                  'Henüz not eklenmedi.',
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: notes.length,
-                itemBuilder: (context, index) {
-                  final data = notes[index].data() as Map<String, dynamic>;
-                  final dateRaw = data['date'];
-                  final date = dateRaw != null
-                      ? DateTime.tryParse(dateRaw) ?? DateTime.now()
-                      : DateTime.now();
-                  return EliteGlassCard(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${date.day}/${date.month}/${date.year}',
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 12,
-                              ),
-                            ),
-                            if (data['priority'] == true)
-                              const Icon(
-                                Icons.star_rounded,
-                                color: Colors.orangeAccent,
-                                size: 16,
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          data['content'] ?? '',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ).marginOnly(bottom: AppSpacing.sm);
-                },
-              );
-            },
-          ),
-
-          const SizedBox(height: AppSpacing.xxl),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Dosyalar',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(
-                  Icons.upload_file_rounded,
-                  color: AppColors.primary,
-                ),
-                color: Theme.of(context).colorScheme.surface,
-                onSelected: (type) => _uploadFile(type),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'Doktor Raporu',
-                    child: Text('Dr. Raporu Yükle'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'Diyet Listesi',
-                    child: Text('Diyet Listesi Yükle'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'Diğer',
-                    child: Text('Diğer Dosya Yükle'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          StreamBuilder<QuerySnapshot>(
-            stream: _db.getAthleteFiles(widget.athlete.id),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const CircularProgressIndicator();
-              }
-              final files = snapshot.data?.docs ?? [];
-              if (files.isEmpty) {
-                return Text(
-                  'Henüz dosya yüklenmedi.',
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: files.length,
-                itemBuilder: (context, index) {
-                  final doc = files[index];
-                  final file = doc.data() as Map<String, dynamic>;
-                  final fileName = file['name'] ?? 'İsimsiz Dosya';
-                  final fileUrl = file['url'];
-
-                  return Card(
-                    color: const Color(0xFF1C1C1E),
-                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.insert_drive_file_rounded,
-                        color: AppColors.primary,
-                      ),
-                      title: Text(
-                        fileName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      subtitle: Text(
-                        file['type'] ?? 'Belge',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 12,
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (fileUrl != null)
-                            IconButton(
-                              icon: const Icon(
-                                Icons.download_rounded,
-                                color: AppColors.primary,
-                              ),
-                              onPressed: () {
-                                AppHaptics.selectionClick();
-                                _downloadService.downloadAndOpenFile(
-                                  fileUrl,
-                                  fileName,
-                                );
-                              },
-                            ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline_rounded,
-                              color: Colors.redAccent,
-                            ),
-                            onPressed: () => _confirmDeleteFile(doc.id, file),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-          const SizedBox(height: AppSpacing.xxl * 2),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _confirmDeleteFile(
-    String docId,
-    Map<String, dynamic> file,
-  ) async {
-    AppHaptics.heavyImpact();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Dosyayı Sil'),
-        content: Text(
-          '${file['name']} dosyasını silmek istediğinize emin misiniz?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('İPTAL'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('SİL'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      _deleteFile(docId, file);
-    }
-  }
-
-  Future<void> _deleteFile(String docId, Map<String, dynamic> file) async {
-    try {
-      AppHaptics.lightImpact();
-      final publicId = file['publicId'] as String?;
-
-      if (publicId == null) {
-        // Eski Firebase dosyası veya publicId eksik
-        await _db.deleteAthleteFile(widget.athlete.id, docId);
-      } else {
-        // Cloudinary dosyası
-        final success = await _uploadService.deleteFile(
-          userId: widget.athlete.id,
-          docId: docId,
-          publicId: publicId,
-        );
-        if (!success) throw Exception('Dosya silinemedi.');
-      }
-
-      if (mounted) {
-        AppHaptics.mediumImpact();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Dosya silindi.')));
-      }
-    } catch (e) {
-      if (mounted) {
-        AppHaptics.heavyImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hata: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showAddNoteModal() {
-    final noteController = TextEditingController();
-    bool isPriority = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-              left: AppSpacing.lg,
-              right: AppSpacing.lg,
-              top: AppSpacing.lg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Yeni Koç Notu',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TextField(
-                  controller: noteController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    hintText: 'Durum, sakatlık, gelişim notları...',
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                SwitchListTile(
-                  title: const Text('Önemli Not (⭐)'),
-                  value: isPriority,
-                  activeColor: Colors.orangeAccent,
-                  onChanged: (v) => setModalState(() => isPriority = v),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                ElevatedButton(
-                  onPressed: () {
-                    if (noteController.text.trim().isEmpty) return;
-                    _db.addAthleteNote(widget.athlete.id, {
-                      'content': noteController.text.trim(),
-                      'priority': isPriority,
-                      'date': DateTime.now().toIso8601String(),
-                    });
-                    Navigator.pop(context);
-                    AppHaptics.mediumImpact();
-                  },
-                  child: const Text('Notu Ekle'),
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Future<void> _uploadFile(String documentType) async {
-    try {
-      final result = await FilePicker.platform.pickFiles();
-      if (result != null) {
-        AppHaptics.lightImpact();
-        ScaffoldMessenger.of(
-          // ignore: use_build_context_synchronously
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Dosya yükleniyor...')));
-
-        final uploadResult = await _uploadService.uploadFile(
-          userId: widget.athlete.id,
-          fileResult: result,
-          fileType: documentType,
-        );
-
-        if (uploadResult != null && mounted) {
-          AppHaptics.mediumImpact();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Dosya başarıyla yüklendi!'),
-              backgroundColor: AppColors.primary,
-            ),
-          );
-        } else if (mounted) {
-          throw Exception('Yükleme başarısız oldu.');
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        AppHaptics.heavyImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Yükleme hatası: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    }
   }
 }
 

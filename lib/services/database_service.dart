@@ -233,4 +233,13 @@ class DatabaseService {
         .collection('crm_files')
         .add({...fileData, 'uploadedAt': FieldValue.serverTimestamp()});
   }
+
+  Future<void> deleteAthleteFile(String athleteId, String fileId) async {
+    await _firestore
+        .collection('athletes')
+        .doc(athleteId)
+        .collection('crm_files')
+        .doc(fileId)
+        .delete();
+  }
 }

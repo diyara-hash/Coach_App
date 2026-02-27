@@ -16,11 +16,11 @@ class PdfReportGenerator {
     required List<Map<String, dynamic>> measurements,
     bool share = true,
   }) async {
+    final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+    final turkceFont = pw.Font.ttf(fontData);
+
     final pdf = pw.Document(
-      theme: pw.ThemeData.withFont(
-        base: pw.Font.helvetica(),
-        bold: pw.Font.helveticaBold(),
-      ),
+      theme: pw.ThemeData.withFont(base: turkceFont, bold: turkceFont),
     );
 
     // Load assets (Logo) - assumes there is an asset at lib/assets/images/logo.png
@@ -47,6 +47,7 @@ class PdfReportGenerator {
     await file.writeAsBytes(await pdf.save());
 
     if (share) {
+      // ignore: deprecated_member_use
       await Share.shareXFiles([
         XFile(file.path),
       ], text: '${athlete.name} - Gelişim Raporu');
@@ -274,36 +275,49 @@ class PdfReportGenerator {
                     : '-';
                 return pw.Container(
                   margin: const pw.EdgeInsets.only(bottom: 16),
-                  padding: const pw.EdgeInsets.all(12),
                   decoration: pw.BoxDecoration(
                     color: PdfColor.fromInt(0xFFF1F5F9), // Slate 50
                     borderRadius: const pw.BorderRadius.all(
                       pw.Radius.circular(8),
                     ),
-                    border: pw.Border(
-                      left: pw.BorderSide(
-                        color: note['priority'] == true
-                            ? PdfColors.orange
-                            : PdfColor.fromInt(0xFF10B981),
-                        width: 4,
-                      ),
-                    ),
                   ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  child: pw.Row(
                     children: [
-                      pw.Text(
-                        date,
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.grey700,
-                          fontSize: 10,
+                      // Sol kenarlık göstergesi (Bordur yerine Row içinde küçük bir Container)
+                      pw.Container(
+                        width: 4,
+                        height: 40, // Dinamik yükseklik için Row'u saracak
+                        decoration: pw.BoxDecoration(
+                          color: note['priority'] == true
+                              ? PdfColors.orange
+                              : PdfColor.fromInt(0xFF10B981),
+                          borderRadius: const pw.BorderRadius.horizontal(
+                            left: pw.Radius.circular(8),
+                          ),
                         ),
                       ),
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        note['content'] ?? '',
-                        style: const pw.TextStyle(fontSize: 12),
+                      pw.Expanded(
+                        child: pw.Padding(
+                          padding: const pw.EdgeInsets.all(12),
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                date,
+                                style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: PdfColors.grey700,
+                                  fontSize: 10,
+                                ),
+                              ),
+                              pw.SizedBox(height: 4),
+                              pw.Text(
+                                note['content'] ?? '',
+                                style: const pw.TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),

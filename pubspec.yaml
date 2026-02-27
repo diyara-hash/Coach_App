@@ -2,7 +2,7 @@ name: coach_app
 description: Kişisel Antrenor Uygulamasi
 
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: '>=3.10.0 <4.0.0'
@@ -45,6 +45,12 @@ dependencies:
   share_plus: ^12.0.1
   open_file: ^3.5.11
   file_picker: ^10.3.10
+  path: ^1.9.1
+  flutter_localizations:
+    sdk: flutter
+  cloudinary_public: ^0.23.1
+  permission_handler: ^12.0.1
+  http: ^1.2.1
 
 dev_dependencies:
   flutter_test:
@@ -70,9 +76,14 @@ flutter_native_splash:
     image: "assets/images/splash_logo.png"
     icon_background_color: "#000000"
   fullscreen: true
+
 flutter:
   uses-material-design: true
   assets:
     - assets/images/bg_main.png
     - assets/images/app_logo.png
     - assets/images/splash_logo.png
+  fonts:
+    - family: RobotoTurkce
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf

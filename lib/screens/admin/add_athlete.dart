@@ -189,6 +189,7 @@ class _AddAthleteState extends State<AddAthlete> {
               const SizedBox(height: AppSpacing.xl),
               TextFormField(
                 controller: _nameController,
+                textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   labelText: 'Ad Soyad',
                   prefixIcon: Icon(Icons.person_outline_rounded),
@@ -203,6 +204,9 @@ class _AddAthleteState extends State<AddAthlete> {
               const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: _emailController,
+                textCapitalization: TextCapitalization.none,
+                autocorrect: false,
+                enableSuggestions: false,
                 decoration: const InputDecoration(
                   labelText: 'E-posta',
                   prefixIcon: Icon(Icons.email_outlined),

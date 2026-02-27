@@ -4,6 +4,8 @@
 	<dict>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Kimliğinizi doğrulamak ve güvenli giriş yapmak için Face ID'yi kullanın.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Dosya seçmek için erişim gerekli</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>

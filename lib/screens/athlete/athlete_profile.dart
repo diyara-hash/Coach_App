@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/elite_glass_card.dart';
 import '../../core/utils/app_haptics.dart';
 import 'package:flutter/cupertino.dart';
+import 'athlete_crm_page.dart';
 
 class AthleteProfile extends StatefulWidget {
   final String athleteId;
@@ -42,6 +43,9 @@ class _AthleteProfileState extends State<AthleteProfile> {
         content: TextField(
           controller: passwordController,
           obscureText: true,
+          textCapitalization: TextCapitalization.none,
+          autocorrect: false,
+          enableSuggestions: false,
           decoration: const InputDecoration(
             hintText: 'Yeni Şifreniz',
             prefixIcon: Icon(Icons.lock_outline_rounded),
@@ -183,6 +187,7 @@ class _AthleteProfileState extends State<AthleteProfile> {
                 if (_isEditing) ...[
                   TextField(
                     controller: _nameController,
+                    textCapitalization: TextCapitalization.words,
                     decoration: const InputDecoration(
                       labelText: 'Ad Soyad',
                       prefixIcon: Icon(Icons.person_outline_rounded),
@@ -192,6 +197,9 @@ class _AthleteProfileState extends State<AthleteProfile> {
                   TextField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                    textCapitalization: TextCapitalization.none,
+                    autocorrect: false,
+                    enableSuggestions: false,
                     decoration: const InputDecoration(
                       labelText: 'Telefon',
                       prefixIcon: Icon(Icons.phone_outlined),
@@ -201,6 +209,7 @@ class _AthleteProfileState extends State<AthleteProfile> {
                   TextField(
                     controller: _bioController,
                     maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
                       labelText: 'Biyografi',
                       prefixIcon: Icon(Icons.info_outline_rounded),
@@ -276,6 +285,48 @@ class _AthleteProfileState extends State<AthleteProfile> {
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
+                              Icons.assignment_ind_rounded,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          title: const Text(
+                            'Sağlık ve Hedeflerimi Güncelle',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          trailing: Icon(
+                            Icons.chevron_right_rounded,
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
+                          ),
+                          onTap: () {
+                            AppHaptics.selectionClick();
+                            Navigator.push(
+                              context,
+                              CupertinoPageRoute(
+                                builder: (_) =>
+                                    AthleteCrmPage(athlete: athlete),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(
+                          color: AppColors.border,
+                          height: 1,
+                          indent: 64,
+                        ),
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
+                          ),
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
                               Icons.lock_outline_rounded,
                               color: AppColors.primary,
                             ),
@@ -328,7 +379,7 @@ class _AthleteProfileState extends State<AthleteProfile> {
                               ),
                               trailing: CupertinoSwitch(
                                 value: isDark,
-                                activeColor: AppColors.primary,
+                                activeTrackColor: AppColors.primary,
                                 onChanged: (val) {
                                   themeProvider.setTheme(
                                     val ? ThemeMode.dark : ThemeMode.light,

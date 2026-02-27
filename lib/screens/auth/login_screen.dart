@@ -37,14 +37,17 @@ class _LoginScreenState extends State<LoginScreen> {
           await auth.canCheckBiometrics || await auth.isDeviceSupported();
       final prefs = await SharedPreferences.getInstance();
       final savedCode = prefs.getString('inviteCode');
-      final savedPassword = prefs.getString('password');
+      final rememberStatus = prefs.getBool('rememberMe') ?? false;
+      final legacyPassword = prefs.getString('password');
 
-      if (savedCode != null && savedPassword != null) {
+      if (savedCode != null) {
         setState(() {
           _hasSavedCredentials = true;
-          _rememberMe = true;
-          _codeController.text = savedCode;
-          _passwordController.text = savedPassword;
+          // Eğer önceden şifre kaydedilmişse veya rememberStatus true ise
+          if (rememberStatus || legacyPassword != null) {
+            _rememberMe = true;
+            _codeController.text = savedCode;
+          }
         });
       } else {
         setState(
@@ -62,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
         localizedReason: 'Giriş yapmak için kimliğinizi doğrulayın',
       );
       if (authenticated) {
-        _login();
+        _login(fromBiometric: true);
       }
     } catch (e) {
       if (!mounted) return;
@@ -72,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _login() async {
+  Future<void> _login({bool fromBiometric = false}) async {
     setState(() => _isLoading = true);
 
     try {
@@ -104,28 +107,39 @@ class _LoginScreenState extends State<LoginScreen> {
       final savedPassword = athlete['password'];
       final enteredPassword = _passwordController.text;
 
-      if (savedPassword == null || savedPassword.isEmpty) {
-        await FirebaseFirestore.instance
-            .collection('athletes')
-            .doc(query.docs.first.id)
-            .update({'password': enteredPassword});
-      } else if (savedPassword != enteredPassword) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Hatalı şifre!')));
-        return;
+      if (!fromBiometric) {
+        if (savedPassword == null || savedPassword.isEmpty) {
+          if (enteredPassword.isEmpty) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Lütfen bir şifre girin!')),
+            );
+            return;
+          }
+          await FirebaseFirestore.instance
+              .collection('athletes')
+              .doc(query.docs.first.id)
+              .update({'password': enteredPassword});
+        } else if (savedPassword != enteredPassword) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Hatalı şifre!')));
+          return;
+        }
       }
 
+      final prefs = await SharedPreferences.getInstance();
       if (_rememberMe) {
-        final prefs = await SharedPreferences.getInstance();
         await prefs.setString('inviteCode', code);
-        await prefs.setString('password', enteredPassword);
+        await prefs.setBool('rememberMe', true);
       } else {
-        final prefs = await SharedPreferences.getInstance();
         await prefs.remove('inviteCode');
-        await prefs.remove('password');
+        await prefs.setBool('rememberMe', false);
       }
+
+      // Güvenlik: Asla şifreyi local'de saklama
+      await prefs.remove('password');
 
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -248,7 +262,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             TextField(
                               controller: _codeController,
-                              textCapitalization: TextCapitalization.characters,
+                              textCapitalization: TextCapitalization.none,
+                              autocorrect: false,
+                              enableSuggestions: false,
                               decoration: const InputDecoration(
                                 hintText: 'Davet Kodunuz',
                                 prefixIcon: Icon(Icons.vpn_key_outlined),
@@ -258,6 +274,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
+                              textCapitalization: TextCapitalization.none,
+                              autocorrect: false,
+                              enableSuggestions: false,
                               decoration: InputDecoration(
                                 hintText: 'Şifreniz',
                                 prefixIcon: const Icon(
@@ -280,28 +299,58 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: Checkbox(
-                                    value: _rememberMe,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _rememberMe = value ?? false;
-                                      });
-                                    },
-                                    activeColor: AppColors.primary,
-                                    checkColor: Colors.black,
-                                    side: const BorderSide(
-                                      color: Colors.white54,
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: Checkbox(
+                                        value: _rememberMe,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _rememberMe = value ?? false;
+                                          });
+                                        },
+                                        activeColor: AppColors.primary,
+                                        checkColor: Colors.black,
+                                        side: const BorderSide(
+                                          color: Colors.white54,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    const Text(
+                                      'Beni Hatırla',
+                                      style: TextStyle(color: Colors.white70),
+                                    ),
+                                  ],
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Şifre sıfırlama yakında eklenecek!',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Şifremi Unuttum',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                const Text(
-                                  'Beni Hatırla',
-                                  style: TextStyle(color: Colors.white70),
                                 ),
                               ],
                             ),
