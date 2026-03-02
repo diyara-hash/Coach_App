@@ -21,4 +21,6 @@ class AppHaptics {
   static void selectionClick() {
     if (!kIsWeb) HapticFeedback.selectionClick();
   }
+
+  static void warning() {}
 }

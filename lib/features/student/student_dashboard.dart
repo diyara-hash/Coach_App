@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/database_service.dart';
@@ -160,6 +162,8 @@ class _SummaryTab extends StatelessWidget {
                                       .textTheme
                                       .bodyMedium
                                       ?.color
+                                      // ignore: duplicate_ignore
+                                      // ignore: deprecated_member_use
                                       ?.withOpacity(0.7),
                                 ),
                           ),

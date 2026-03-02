@@ -87,6 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
           widget.isCoach ? widget.athleteName : 'Coach',
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
+        // ignore: deprecated_member_use
         backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
         flexibleSpace: ClipRect(
           child: BackdropFilter(
@@ -171,9 +172,11 @@ class _ChatScreenState extends State<ChatScreen> {
             right: AppSpacing.md,
           ),
           decoration: BoxDecoration(
+            // ignore: deprecated_member_use
             color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
             border: Border(
               top: BorderSide(
+                // ignore: deprecated_member_use
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               ),
             ),
@@ -185,11 +188,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   decoration: BoxDecoration(
                     color: Theme.of(
                       context,
+                      // ignore: deprecated_member_use
                     ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: Theme.of(
                         context,
+                        // ignore: deprecated_member_use
                       ).colorScheme.onSurface.withOpacity(0.1),
                     ),
                   ),
@@ -286,6 +291,7 @@ class _MessageBubble extends StatelessWidget {
               : Border.all(
                   color: Theme.of(
                     context,
+                    // ignore: deprecated_member_use
                   ).colorScheme.onSurface.withOpacity(0.1),
                 ),
         ),
@@ -316,6 +322,7 @@ class _MessageBubble extends StatelessWidget {
                     ? Colors.black54
                     : Theme.of(
                         context,
+                        // ignore: deprecated_member_use
                       ).textTheme.bodyMedium?.color?.withOpacity(0.7),
                 fontSize: 11,
                 fontWeight: FontWeight.w600,

@@ -301,6 +301,7 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
                       border: Border.all(
                         color: Theme.of(
                           context,
+                          // ignore: deprecated_member_use
                         ).colorScheme.onSurface.withOpacity(0.05),
                       ),
                     ),
@@ -311,6 +312,7 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
                           size: 48,
                           color: Theme.of(
                             context,
+                            // ignore: deprecated_member_use
                           ).textTheme.bodyMedium?.color?.withOpacity(0.2),
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -319,6 +321,7 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
                           style: TextStyle(
                             color: Theme.of(
                               context,
+                              // ignore: deprecated_member_use
                             ).textTheme.bodyMedium?.color?.withOpacity(0.7),
                           ),
                         ),
@@ -388,6 +391,7 @@ class _ProgramBuilderState extends State<ProgramBuilder> {
                 top: BorderSide(
                   color: Theme.of(
                     context,
+                    // ignore: deprecated_member_use
                   ).colorScheme.onSurface.withOpacity(0.1),
                 ),
               ),

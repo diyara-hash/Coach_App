@@ -119,6 +119,7 @@ class SkeletonStatsRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Divider(
+                // ignore: deprecated_member_use
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               ),
             ),
@@ -126,6 +127,7 @@ class SkeletonStatsRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Divider(
+                // ignore: deprecated_member_use
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               ),
             ),

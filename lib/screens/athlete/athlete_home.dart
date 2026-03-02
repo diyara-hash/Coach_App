@@ -8,6 +8,7 @@ import 'athlete_profile.dart';
 import '../../core/theme/app_theme.dart';
 
 import '../../features/student/student_dashboard.dart';
+import 'athlete_dashboard.dart';
 
 class AthleteHome extends StatefulWidget {
   final String athleteId;
@@ -23,6 +24,14 @@ class _AthleteHomeState extends State<AthleteHome> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
+      AthleteDashboard(
+        athleteId: widget.athleteId,
+        onNavigate: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
       _WorkoutList(athleteId: widget.athleteId),
       StudentDashboard(athleteId: widget.athleteId),
     ];
@@ -39,6 +48,10 @@ class _AthleteHomeState extends State<AthleteHome> {
           currentIndex: _selectedIndex,
           onTap: (index) => setState(() => _selectedIndex = index),
           items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'Ana Sayfa',
+            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.fitness_center_rounded),
               label: 'Antrenman',
@@ -128,6 +141,7 @@ class _WorkoutList extends StatelessWidget {
                     size: 80,
                     color: Theme.of(
                       context,
+                      // ignore: deprecated_member_use
                     ).textTheme.bodyMedium?.color?.withOpacity(0.3),
                   ),
                   const SizedBox(height: AppSpacing.lg),

@@ -53,6 +53,7 @@ class AthleteList extends StatelessWidget {
                     style: TextStyle(
                       color: Theme.of(
                         context,
+                        // ignore: deprecated_member_use
                       ).textTheme.bodyMedium?.color?.withOpacity(0.7),
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -116,22 +117,66 @@ class AthleteList extends StatelessWidget {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.forum_outlined,
-                                color: AppColors.primary,
+                            StreamBuilder<int>(
+                              stream: db.getUnreadMessagesFromUser(
+                                athlete.id,
+                                'admin',
                               ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ChatScreen(
-                                      athleteId: athlete.id,
-                                      athleteName: athlete.name,
-                                      currentUserId: coachId,
-                                      isCoach: true,
+                              builder: (context, snapshot) {
+                                final unreadCount = snapshot.data ?? 0;
+                                return Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.forum_outlined,
+                                        color: AppColors.primary,
+                                      ),
+                                      onPressed: () {
+                                        if (unreadCount > 0) {
+                                          db.markMessagesAsReadFromUser(
+                                            athlete.id,
+                                            'admin',
+                                          );
+                                        }
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => ChatScreen(
+                                              athleteId: athlete.id,
+                                              athleteName: athlete.name,
+                                              currentUserId: coachId,
+                                              isCoach: true,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                  ),
+                                    if (unreadCount > 0)
+                                      Positioned(
+                                        right: 8,
+                                        top: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.redAccent,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Text(
+                                            unreadCount > 9
+                                                ? '9+'
+                                                : unreadCount.toString(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 );
                               },
                             ),

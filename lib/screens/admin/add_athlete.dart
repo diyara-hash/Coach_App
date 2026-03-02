@@ -111,6 +111,7 @@ class _AddAthleteState extends State<AddAthlete> {
               style: TextStyle(
                 color: Theme.of(
                   context,
+                  // ignore: deprecated_member_use
                 ).textTheme.bodyMedium?.color?.withOpacity(0.7),
               ),
             ),

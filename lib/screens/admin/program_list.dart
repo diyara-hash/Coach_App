@@ -52,6 +52,7 @@ class ProgramList extends StatelessWidget {
                     style: TextStyle(
                       color: Theme.of(
                         context,
+                        // ignore: deprecated_member_use
                       ).textTheme.bodyMedium?.color?.withOpacity(0.7),
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -197,6 +198,7 @@ class ProgramList extends StatelessWidget {
                     bottom: BorderSide(
                       color: Theme.of(
                         context,
+                        // ignore: deprecated_member_use
                       ).colorScheme.onSurface.withOpacity(0.1),
                     ),
                   ),

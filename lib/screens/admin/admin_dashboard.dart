@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../auth/login_screen.dart';
 import 'add_athlete.dart';
@@ -9,6 +11,7 @@ import '../../core/widgets/elite_glass_card.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../features/admin/admin_measurements_panel.dart';
 import '../../core/utils/app_haptics.dart';
+import '../../services/database_service.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -92,6 +95,8 @@ class AdminDashboard extends StatelessWidget {
                 child: Divider(
                   color: Theme.of(
                     context,
+                    // ignore: duplicate_ignore
+                    // ignore: deprecated_member_use
                   ).colorScheme.onSurface.withOpacity(0.1),
                 ),
               ),
@@ -178,82 +183,117 @@ class AdminDashboard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
             Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: AppSpacing.md,
-                mainAxisSpacing: AppSpacing.md,
-                children: [
-                  _buildMenuCard(
-                    context,
-                    'Sporcu Listesi',
-                    Icons.people_alt_rounded,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const AthleteList()),
+              child: StreamBuilder<int>(
+                stream: DatabaseService().getUnreadNotificationsCount(
+                  'admin',
+                  'message',
+                ),
+                builder: (context, messageSnapshot) {
+                  final unreadMessages = messageSnapshot.data ?? 0;
+
+                  return StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: DatabaseService().getMeasurements(isRead: false),
+                    builder: (context, measurementSnapshot) {
+                      final unreadMeasurements =
+                          measurementSnapshot.data?.length ?? 0;
+
+                      return GridView.count(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: AppSpacing.md,
+                        mainAxisSpacing: AppSpacing.md,
+                        children: [
+                          _buildMenuCard(
+                            context,
+                            'Sporcu Listesi',
+                            Icons.people_alt_rounded,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AthleteList(),
+                                ),
+                              );
+                            },
+                            0,
+                          ),
+                          _buildMenuCard(
+                            context,
+                            'Öğrenci Ölçüleri',
+                            Icons.straighten_rounded,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const AdminMeasurementsPanel(),
+                                ),
+                              );
+                            },
+                            1,
+                            badgeCount: unreadMeasurements,
+                          ),
+                          _buildMenuCard(
+                            context,
+                            'Programlarım',
+                            Icons.fitness_center_rounded,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ProgramList(),
+                                ),
+                              );
+                            },
+                            2,
+                          ),
+                          _buildMenuCard(
+                            context,
+                            'Yeni Program',
+                            Icons.add_task_rounded,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ProgramBuilder(),
+                                ),
+                              );
+                            },
+                            3,
+                          ),
+                          _buildMenuCard(
+                            context,
+                            'Yeni Sporcu',
+                            Icons.person_add_alt_1_rounded,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AddAthlete(),
+                                ),
+                              );
+                            },
+                            4,
+                          ),
+                          _buildMenuCard(
+                            context,
+                            'Mesajlar',
+                            Icons.forum_rounded,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AthleteList(),
+                                ),
+                              );
+                            },
+                            5,
+                            badgeCount: unreadMessages,
+                          ),
+                        ],
                       );
                     },
-                    0,
-                  ),
-                  _buildMenuCard(
-                    context,
-                    'Öğrenci Ölçüleri',
-                    Icons.straighten_rounded,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminMeasurementsPanel(),
-                        ),
-                      );
-                    },
-                    1,
-                  ),
-                  _buildMenuCard(
-                    context,
-                    'Programlarım',
-                    Icons.fitness_center_rounded,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ProgramList()),
-                      );
-                    },
-                    2,
-                  ),
-                  _buildMenuCard(
-                    context,
-                    'Yeni Program',
-                    Icons.add_task_rounded,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ProgramBuilder(),
-                        ),
-                      );
-                    },
-                    3,
-                  ),
-                  _buildMenuCard(
-                    context,
-                    'Yeni Sporcu',
-                    Icons.person_add_alt_1_rounded,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const AddAthlete()),
-                      );
-                    },
-                    4,
-                  ),
-                  _buildMenuCard(context, 'Mesajlar', Icons.forum_rounded, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AthleteList()),
-                    );
-                  }, 5),
-                ],
+                  );
+                },
               ),
             ),
           ],
@@ -267,8 +307,9 @@ class AdminDashboard extends StatelessWidget {
     String title,
     IconData icon,
     VoidCallback onTap,
-    int index,
-  ) {
+    int index, {
+    int badgeCount = 0,
+  }) {
     return GestureDetector(
           onTap: onTap,
           child: EliteGlassCard(
@@ -276,16 +317,42 @@ class AdminDashboard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Icon(icon, size: 32, color: AppColors.primary),
                     ),
-                  ),
-                  child: Icon(icon, size: 32, color: AppColors.primary),
+                    if (badgeCount > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            badgeCount > 9 ? '9+' : badgeCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(

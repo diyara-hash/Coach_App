@@ -80,6 +80,19 @@ class DatabaseService {
     await _firestore.collection('programs').doc(programId).update({
       'assignedAthleteId': athleteId,
     });
+
+    // Antrenman atandığında bildirim oluştur
+    final notifId = _firestore.collection('notifications').doc().id;
+    await _firestore.collection('notifications').doc(notifId).set({
+      'id': notifId,
+      'title': 'Yeni Program 🏋️',
+      'body': 'Sana yeni bir antrenman programı atandı.',
+      'type': 'program',
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'targetUserId': athleteId,
+      'senderId': 'admin',
+    });
   }
 
   Stream<List<Program>> getAthletePrograms(String athleteId) {
@@ -241,5 +254,61 @@ class DatabaseService {
         .collection('crm_files')
         .doc(fileId)
         .delete();
+  }
+
+  // ===== NOTIFICATIONS =====
+  Stream<int> getUnreadNotificationsCount(String targetUserId, String type) {
+    return _firestore
+        .collection('notifications')
+        .where('targetUserId', isEqualTo: targetUserId)
+        .where('type', isEqualTo: type)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> getUnreadMessagesFromUser(String senderId, String targetUserId) {
+    return _firestore
+        .collection('notifications')
+        .where('targetUserId', isEqualTo: targetUserId)
+        .where('senderId', isEqualTo: senderId)
+        .where('type', isEqualTo: 'message')
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Future<void> markNotificationsAsRead(String targetUserId, String type) async {
+    final snapshot = await _firestore
+        .collection('notifications')
+        .where('targetUserId', isEqualTo: targetUserId)
+        .where('type', isEqualTo: type)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    final batch = _firestore.batch();
+    for (var doc in snapshot.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
+  }
+
+  Future<void> markMessagesAsReadFromUser(
+    String senderId,
+    String targetUserId,
+  ) async {
+    final snapshot = await _firestore
+        .collection('notifications')
+        .where('targetUserId', isEqualTo: targetUserId)
+        .where('senderId', isEqualTo: senderId)
+        .where('type', isEqualTo: 'message')
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    final batch = _firestore.batch();
+    for (var doc in snapshot.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
   }
 }

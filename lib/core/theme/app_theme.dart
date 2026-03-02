@@ -89,7 +89,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      scaffoldBackgroundColor: bgColor,
+      scaffoldBackgroundColor:
+          Colors.transparent, // Let AnimatedBackground show through
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: AppColors.primary,
@@ -165,7 +166,8 @@ class AppTheme {
             ),
           ),
       appBarTheme: AppBarTheme(
-        backgroundColor: bgColor,
+        backgroundColor:
+            Colors.transparent, // So animation shows behind AppBar too
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: textPri),

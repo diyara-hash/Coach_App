@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
@@ -79,6 +81,8 @@ class _AdminMeasurementsPanelState extends State<AdminMeasurementsPanel> {
                           style: TextStyle(
                             color: Theme.of(
                               context,
+                              // ignore: duplicate_ignore
+                              // ignore: deprecated_member_use
                             ).textTheme.bodyMedium?.color?.withOpacity(0.7),
                           ),
                         ),

@@ -8,6 +8,7 @@ import 'screens/common/splash_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/widgets/offline_banner.dart';
+import 'core/widgets/animated_fitness_background.dart';
 
 final themeProvider = ThemeProvider();
 
@@ -40,7 +41,9 @@ class CoachApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           builder: (context, child) {
-            return OfflineBanner(child: child ?? const SizedBox());
+            return AnimatedFitnessBackground(
+              child: OfflineBanner(child: child ?? const SizedBox()),
+            );
           },
           home: const SplashScreen(),
         );
